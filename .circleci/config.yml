@@ -1,0 +1,37 @@
+version: 2.1
+orbs:
+  protobuf: izumin5210/protobuf@0.1.0
+jobs:
+  build:
+    docker:
+      - image: circleci/node:7.10
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package.json" }}
+            - v1-dependencies-
+
+      - protobuf/install
+      - run:
+          name: "Install dependencies"
+          command: |
+            sudo npm -g i nyc
+            sudo npm -g i coveralls
+            sudo npm -g i grpc-tools
+            npm i xpring-common-js@latest
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package.json" }}
+
+      - run: nyc npm test
+
+      - run:
+          name: Code Coverage
+          command: |
+            nyc report --reporter=text-lcov | coveralls
